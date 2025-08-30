@@ -13,6 +13,9 @@ scikit-learn==0.22.2
 dgl==0.9.1
 dgllife==0.3.2
 
+# 化學信息學
+rdkit-pypi==2022.9.5
+
 # 數據處理
 joblib==1.1.0
 

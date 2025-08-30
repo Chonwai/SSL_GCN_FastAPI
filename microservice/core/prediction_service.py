@@ -87,41 +87,62 @@ class ToxicityPredictionService:
     
     def predict_single(self, molecule_id: str, smiles: str, task_type: str) -> Dict[str, Any]:
         """單一分子預測"""
-        self._validate_task_type(task_type)
-        
-        # 創建臨時目錄
-        temp_dir = tempfile.mkdtemp()
         try:
-            # 創建臨時FASTA檔案
-            temp_fasta = self._create_temp_fasta([{'molecule_id': molecule_id, 'smiles': smiles}])
+            self._validate_task_type(task_type)
             
-            # 執行預測
-            result = self._predict_batch_internal([{'molecule_id': molecule_id, 'smiles': smiles}], task_type, temp_dir)
+            # 創建臨時目錄
+            temp_dir = tempfile.mkdtemp()
+            temp_fasta = None
             
-            if result:
-                prediction_result = result[0]
-                return {
-                    "molecule_id": prediction_result["molecule_id"],
-                    "smiles": prediction_result["smiles"],
-                    "prediction": prediction_result["prediction"],
-                    "confidence": prediction_result.get("confidence"),
-                    "status": "success"
-                }
-            else:
-                return {
-                    "molecule_id": molecule_id,
-                    "smiles": smiles,
-                    "prediction": "invalid mol",
-                    "confidence": None,
-                    "status": "error"
-                }
+            try:
+                # 執行預測
+                result = self._predict_batch_internal([{'molecule_id': molecule_id, 'smiles': smiles}], task_type, temp_dir)
                 
-        finally:
-            # 清理臨時檔案
-            if os.path.exists(temp_fasta):
-                os.unlink(temp_fasta)
-            if os.path.exists(temp_dir):
-                shutil.rmtree(temp_dir)
+                if result and len(result) > 0:
+                    prediction_result = result[0]
+                    return {
+                        "molecule_id": prediction_result["molecule_id"],
+                        "smiles": prediction_result["smiles"],
+                        "prediction": prediction_result["prediction"],
+                        "confidence": prediction_result.get("confidence"),
+                        "status": prediction_result["status"]
+                    }
+                else:
+                    return {
+                        "molecule_id": molecule_id,
+                        "smiles": smiles,
+                        "prediction": "invalid mol",
+                        "confidence": None,
+                        "status": "error"
+                    }
+                    
+            finally:
+                # 清理臨時檔案
+                if temp_fasta and os.path.exists(temp_fasta):
+                    os.unlink(temp_fasta)
+                if os.path.exists(temp_dir):
+                    shutil.rmtree(temp_dir)
+                    
+        except ValueError as e:
+            # 任務類型驗證錯誤
+            return {
+                "molecule_id": molecule_id,
+                "smiles": smiles,
+                "prediction": "error",
+                "confidence": None,
+                "status": "error",
+                "error_message": str(e)
+            }
+        except Exception as e:
+            # 其他預測錯誤
+            return {
+                "molecule_id": molecule_id,
+                "smiles": smiles,
+                "prediction": "invalid mol",
+                "confidence": None,
+                "status": "error",
+                "error_message": f"預測失敗: {str(e)}"
+            }
     
     def predict_batch(self, molecules: List[Dict[str, str]], task_type: str) -> List[Dict[str, Any]]:
         """批次分子預測"""
@@ -147,8 +168,8 @@ class ToxicityPredictionService:
         
         try:
             # 設定參數
-            pretrain_folder_path = os.path.join(self.model_root, task_type, '/')
-            
+            pretrain_folder_path = os.path.join(self.model_root, task_type)
+
             args = {
                 'task_names': task_type,
                 'smiles_column': 'SMILES',
@@ -177,9 +198,18 @@ class ToxicityPredictionService:
             result = self._prediction(args, exp_config, dataset)
             
             # 處理無效分子
-            result['id'].extend(np.array(trans_mol['id'])[args['invalid_mol_ids']])
-            result['smiles'].extend(np.array(trans_mol['SMILES'])[args['invalid_mol_ids']])
-            result['pre'].extend(['invalid mol']*len(args['invalid_mol_ids']))
+            if args['invalid_mol_ids']:
+                try:
+                    result['id'].extend(np.array(trans_mol['id'])[args['invalid_mol_ids']])
+                    result['smiles'].extend(np.array(trans_mol['SMILES'])[args['invalid_mol_ids']])
+                    result['pre'].extend(['invalid mol']*len(args['invalid_mol_ids']))
+                except (IndexError, TypeError) as e:
+                    # 如果索引出錯，添加默認的無效分子結果
+                    for invalid_id in args['invalid_mol_ids']:
+                        if invalid_id < len(trans_mol['id']):
+                            result['id'].append(trans_mol['id'][invalid_id])
+                            result['smiles'].append(trans_mol['SMILES'][invalid_id])
+                            result['pre'].append('invalid mol')
             
             # 格式化結果
             formatted_results = []
