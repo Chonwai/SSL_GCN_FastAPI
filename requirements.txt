@@ -1,0 +1,23 @@
+# FastAPI 和 Web 框架
+fastapi==0.109.2
+uvicorn[standard]==0.27.1
+
+# 深度學習和科學計算
+torch==1.9.0
+numpy==1.20.1
+pandas==0.25.3
+scipy==1.4.1
+scikit-learn==0.22.2
+
+# 圖神經網絡
+dgl==0.9.1
+dgllife==0.3.2
+
+# 數據處理
+joblib==1.1.0
+
+# Pydantic 數據驗證
+pydantic==1.10.13
+
+# 其他工具
+python-multipart==0.0.6 

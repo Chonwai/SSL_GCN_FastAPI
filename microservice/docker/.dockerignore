@@ -1,0 +1,48 @@
+# Git 相關
+.git
+.gitignore
+
+# Python 相關
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+.pytest_cache
+.coverage
+htmlcov
+
+# 系統檔案
+.DS_Store
+Thumbs.db
+*.log
+
+# 測試檔案
+test/
+test_data.fasta
+test_data_result.csv
+
+# 文檔
+*.md
+*.docx
+readme.docx
+
+# 暫存檔案
+*.tmp
+*.temp
+temp/
+tmp/
+
+# IDE 相關
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 其他
+*.zip
+*.tar.gz
+backup/ 
