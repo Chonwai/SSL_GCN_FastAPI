@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.6
-FROM python:3.8-slim AS base
+FROM python:3.9-slim AS base
 
 # 安裝系統依賴
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -12,10 +12,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# 設定環境變數
+# 設定環境變數 - ARM64 優化
 ENV PYTHONUNBUFFERED=1 \
     APP_ROOT=/app \
-    API_PORT=8007
+    API_PORT=8007 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONHASHSEED=random \
+    # ARM64 優化
+    OPENBLAS_CORETYPE=ARMV8 \
+    OPENBLAS_NUM_THREADS=1 \
+    MKL_NUM_THREADS=1 \
+    NUMEXPR_NUM_THREADS=1 \
+    OMP_NUM_THREADS=1
 
 WORKDIR /app
 
@@ -25,8 +33,11 @@ COPY model/ /app/model/
 COPY utils.py /app/
 COPY dataset.py /app/
 
-# 安裝Python依賴
-RUN pip install --no-cache-dir -r requirements.txt
+# 安裝Python依賴 - ARM64 優化
+RUN pip install --no-cache-dir \
+    --only-binary=all \
+    --prefer-binary \
+    -r requirements.txt
 
 # 複製應用程式碼
 COPY microservice/ /app/microservice/

@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   ssl-gcn-api:
-    platform: linux/amd64  # 在 Apple Silicon 上避免相容性問題
+    # 移除 platform 指定，讓 Docker 自動選擇合適架構 (ARM64/x86)
     build:
       context: ../..
       dockerfile: microservice/docker/Dockerfile
