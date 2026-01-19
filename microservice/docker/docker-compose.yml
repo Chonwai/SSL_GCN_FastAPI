@@ -23,7 +23,10 @@ services:
       - ../../model:/app/model:ro
     networks:
       - ssl-gcn-network
+      - axpep-ecosystem-network
 
 networks:
   ssl-gcn-network:
     driver: bridge 
+  axpep-ecosystem-network:
+    external: true
